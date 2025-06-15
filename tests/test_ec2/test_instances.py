@@ -1883,6 +1883,36 @@ def test_describe_instance_status_with_instance_filter_deprecated():
 
 
 @mock_aws
+def test_describe_instance_status_include_all_with_instance_ids():
+    client = boto3.client("ec2", region_name="us-east-1")
+
+    resp = client.run_instances(ImageId=EXAMPLE_AMI_ID, MinCount=2, MaxCount=2)
+    inst1_id = resp["Instances"][0]["InstanceId"]
+    inst2_id = resp["Instances"][1]["InstanceId"]
+
+    # Stop one instance
+    client.stop_instances(InstanceIds=[inst1_id])
+
+    # With IncludeAllInstances=True and specific InstanceIds,
+    # ALL instances (including stopped) should be returned.
+    result = client.describe_instance_status(
+        InstanceIds=[inst1_id, inst2_id],
+        IncludeAllInstances=True,
+    )
+
+    returned_ids = [s["InstanceId"] for s in result["InstanceStatuses"]]
+
+    assert inst1_id in returned_ids, (
+        f"Stopped instance {inst1_id} should be returned when "
+        "IncludeAllInstances=True"
+    )
+    assert inst2_id in returned_ids, (
+        f"Running instance {inst2_id} should be returned"
+    )
+    assert len(result["InstanceStatuses"]) == 2
+
+
+@mock_aws
 def test_describe_instance_credit_specifications():
     conn = boto3.client("ec2", region_name="us-west-1")
 
