@@ -120,7 +120,7 @@ def fixture_job_run_factory(client):
             }
         },
         tags={"tag1": "tag1_val"},
-        executionTimeoutMinutes=5,
+        executionTimeoutMinutes=10,
     )
 
     app_2_resp = client.create_application(
@@ -161,7 +161,7 @@ def fixture_job_run_factory(client):
             }
         },
         tags={"tag1": "tag1_val"},
-        executionTimeoutMinutes=5,
+        executionTimeoutMinutes=10,
     )
 
     yield {
@@ -744,6 +744,22 @@ class TestStartJobRun:
         err = exc.value.response["Error"]
         assert err["Code"] == "ValidationException"
         assert err["Message"] == "RunTimeout must be at least 5 minutes."
+
+    def test_run_timeout_boundary(self):
+        """executionTimeoutMinutes=5 should be accepted as the minimum valid value."""
+        resp = self.client.start_job_run(
+            applicationId=self.application_ids[0],
+            executionRoleArn=f"arn:aws:iam::{ACCOUNT_ID}:role/emr-serverless-role",
+            jobDriver={
+                "sparkSubmit": {
+                    "entryPoint": "test.jar",
+                    "entryPointArguments": ["-h"],
+                    "sparkSubmitParameters": "--num-executors 1",
+                }
+            },
+            executionTimeoutMinutes=5,
+        )
+        assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
 class TestGetJobRun:

@@ -393,7 +393,7 @@ class EMRServerlessBackend(BaseBackend):
         if role_account_id != self.account_id:
             raise AccessDeniedException("Cross-account pass role is not allowed.")
 
-        if execution_timeout_minutes and execution_timeout_minutes < 5:
+        if execution_timeout_minutes and execution_timeout_minutes <= 5:
             raise ValidationException("RunTimeout must be at least 5 minutes.")
 
         application_resp = self.get_application(application_id)
