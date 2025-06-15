@@ -79,7 +79,7 @@ class ECRResponse(BaseResponse):
         registry_id = self._get_param("registryId")
         image_ids = self._get_param("imageIds")
         images = self.ecr_backend.describe_images(
-            repository_str, registry_id, image_ids
+            repository_str, registry_id
         )
         # We have to do a bit of manipulation here because a real AWS ECR backend
         # does not serialize `imageTags` if it's an empty array (and we already
