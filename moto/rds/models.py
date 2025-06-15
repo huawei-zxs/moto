@@ -1472,7 +1472,7 @@ class DBInstance(EventMixin, CloudFormationModel, RDSBaseModel):
             if value is not None:
                 setattr(self, key, value)
 
-        cwl_exports = db_kwargs.get("cloudwatch_logs_export_configuration") or {}
+        cwl_exports = db_kwargs.get("cloudwatch_logs_export_configuration")
         for exp in cwl_exports.get("DisableLogTypes", []):
             self.enabled_cloudwatch_logs_exports.remove(exp)
         self.enabled_cloudwatch_logs_exports.extend(
