@@ -1281,10 +1281,6 @@ class LogsBackend(BaseBackend):
         self, log_group_name: str
     ) -> Iterable[SubscriptionFilter]:
         log_group = self.groups.get(log_group_name)
-
-        if not log_group:
-            raise ResourceNotFoundException()
-
         return log_group.describe_subscription_filters()
 
     def put_subscription_filter(
