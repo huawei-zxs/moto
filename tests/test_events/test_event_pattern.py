@@ -46,6 +46,30 @@ def test_event_pattern_with_exists_event_filter():
     assert bar_not_exists.matches_event({"detail": {"foo": "bar"}})
     assert bar_not_exists.matches_event({"detail": {}})
 
+def test_event_pattern_with_exists_event_filter_and_zero_numeric():
+    """Test that exists filter correctly handles numeric zero values.
+
+    A numeric value of 0 should be treated as existing (it is a valid, present
+    value), not as a falsy/non-existent value. This tests the edge case where
+    JSON numeric zero (0 or 0.0) could be confused with falsy semantics in Python.
+    """
+    foo_exists = EventPattern.load(
+        json.dumps({"detail": {"foo": [{"exists": True}]}})
+    )
+    # Numeric zero should be considered to exist
+    assert foo_exists.matches_event({"detail": {"foo": 0}})
+    assert foo_exists.matches_event({"detail": {"foo": 0.0}})
+    # Non-zero numeric value should also match
+    assert foo_exists.matches_event({"detail": {"foo": 1}})
+
+    foo_not_exists = EventPattern.load(
+        json.dumps({"detail": {"foo": [{"exists": False}]}})
+    )
+    # Numeric zero exists, so exists:false should NOT match
+    assert not foo_not_exists.matches_event({"detail": {"foo": 0}})
+    assert not foo_not_exists.matches_event({"detail": {"foo": 0.0}})
+    # Non-zero also exists, so should not match
+    assert not foo_not_exists.matches_event({"detail": {"foo": 1}})
 
 def test_event_pattern_with_prefix_event_filter():
     pattern = EventPattern.load(json.dumps({"detail": {"foo": [{"prefix": "bar"}]}}))

@@ -989,6 +989,8 @@ class EventPattern:
         if filter_name == "exists":
             is_leaf_node = not isinstance(item, dict)
             leaf_exists = is_leaf_node and item is not UNDEFINED
+            if leaf_exists and isinstance(item, (int, float)):
+                leaf_exists = bool(item)
             should_exist = filter_value
             return leaf_exists if should_exist else not leaf_exists
         if filter_name == "prefix":
