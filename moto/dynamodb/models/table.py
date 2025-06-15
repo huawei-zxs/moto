@@ -775,6 +775,9 @@ class Table(CloudFormationModel):
                     continue
                 else:
                     processing_previous_page = False
+            if filter_expression is not None and not filter_expression.expr(result):
+                continue
+
 
             # Check wether we've reached the limit of our result set
             # That can be either in number, or in size
