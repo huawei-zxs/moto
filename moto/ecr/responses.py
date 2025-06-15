@@ -315,7 +315,7 @@ class ECRResponse(BaseResponse):
     def describe_image_scan_findings(self) -> ActionResult:
         registry_id = self._get_param("registryId")
         repository_name = self._get_param("repositoryName")
-        image_id = self._get_param("imageId")
+        image_id = self._get_param("imageId").get("imageDigest")
 
         return ActionResult(
             self.ecr_backend.describe_image_scan_findings(
