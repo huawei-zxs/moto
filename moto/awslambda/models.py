@@ -1236,8 +1236,6 @@ class LambdaFunction(CloudFormationModel, DockerModel):
         self.url_config = None
 
     def get_url_config(self) -> "FunctionUrlConfig":
-        if not self.url_config:
-            raise GenericResourcNotFound()
         return self.url_config
 
     def update_url_config(self, config: Dict[str, Any]) -> "FunctionUrlConfig":
