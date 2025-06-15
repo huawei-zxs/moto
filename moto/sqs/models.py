@@ -584,7 +584,7 @@ class Queue(CloudFormationModel):
                         diff = message.sent_timestamp - m.sent_timestamp  # type: ignore
                         # if a duplicate message is received within the deduplication time then it should
                         # not be added to the queue
-                        if diff / 1000 < DEDUPLICATION_TIME_IN_SECONDS:
+                        if diff / 1000 <= DEDUPLICATION_TIME_IN_SECONDS:
                             return
 
         with self._messages_lock:

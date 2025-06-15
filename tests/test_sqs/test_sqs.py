@@ -3025,6 +3025,38 @@ def test_fifo_queue_send_duplicate_messages_after_deduplication_time_limit():
     assert len(messages) == 2
 
 
+
+@mock_aws
+def test_fifo_queue_deduplication_exactly_at_time_boundary():
+    """Test that a message sent exactly at the 5-minute deduplication boundary
+    is NOT incorrectly deduplicated.
+
+    AWS deduplication window is "within 5 minutes", meaning messages sent
+    exactly 300 seconds apart should both be delivered, not deduplicated.
+    """
+    if settings.TEST_SERVER_MODE:
+        raise SkipTest("Cant manipulate time in server mode")
+
+    sqs = boto3.resource("sqs", region_name=REGION)
+
+    with freeze_time("2015-01-01 12:00:00"):
+        msg_queue = sqs.create_queue(
+            QueueName=f"test-boundary-{str(uuid4())[0:6]}.fifo",
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
+        msg_queue.send_message(MessageBody="boundary-test", MessageGroupId="group1")
+
+    # Advance exactly 300 seconds (5 minutes) — the deduplication boundary
+    with freeze_time("2015-01-01 12:05:00"):
+        msg_queue.send_message(MessageBody="boundary-test", MessageGroupId="group2")
+        messages = msg_queue.receive_messages(MaxNumberOfMessages=2)
+
+    assert len(messages) == 2, (
+        f"Expected 2 messages at the deduplication boundary (300s), "
+        f"but got {len(messages)}. "
+        f"Messages sent exactly DEDUPLICATION_TIME_IN_SECONDS apart should NOT be deduplicated."
+    )
+
 @mock_aws
 def test_fifo_queue_send_deduplicationid_same_as_sha256_of_old_message():
     sqs = boto3.resource("sqs", region_name=REGION)
