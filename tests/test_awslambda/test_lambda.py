@@ -707,6 +707,56 @@ def test_get_function_configuration(key):
     with pytest.raises(conn.exceptions.ResourceNotFoundException):
         conn.get_function_configuration(FunctionName="junk", Qualifier="$LATEST")
 
+@pytest.mark.parametrize("key", ["FunctionName", "FunctionArn"])
+@mock_aws
+@freeze_time("2015-01-01 00:00:00")
+def test_update_function_configuration_memory_and_timeout_swapped(key):
+    bucket_name = str(uuid4())
+    s3_conn = boto3.client("s3", _lambda_region)
+    s3_conn.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": _lambda_region},
+    )
+
+    zip_content = get_test_zip_file1()
+    s3_conn.put_object(Bucket=bucket_name, Key="test.zip", Body=zip_content)
+    conn = boto3.client("lambda", _lambda_region)
+    function_name = str(uuid4())[0:6]
+
+    fxn = conn.create_function(
+        FunctionName=function_name,
+        Runtime=PYTHON_VERSION,
+        Role=get_role_name(),
+        Handler="lambda_function.lambda_handler",
+        Code={"S3Bucket": bucket_name, "S3Key": "test.zip"},
+        Description="test lambda function",
+        Timeout=3,
+        MemorySize=128,
+        Publish=True,
+    )
+    name_or_arn = fxn[key]
+
+    assert fxn["MemorySize"] == 128
+    assert fxn["Timeout"] == 3
+
+    # Update only Timeout, MemorySize should remain unchanged
+    updated_config = conn.update_function_configuration(
+        FunctionName=name_or_arn,
+        Timeout=7,
+    )
+
+    assert updated_config["MemorySize"] == 128
+    assert updated_config["Timeout"] == 7
+
+    # Update only MemorySize, Timeout should remain unchanged
+    updated_config2 = conn.update_function_configuration(
+        FunctionName=name_or_arn,
+        MemorySize=256,
+    )
+
+    assert updated_config2["MemorySize"] == 256
+    assert updated_config2["Timeout"] == 7
+
 
 @pytest.mark.parametrize("key", ["FunctionName", "FunctionArn"])
 @mock_aws

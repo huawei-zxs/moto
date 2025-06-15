@@ -830,13 +830,13 @@ class LambdaFunction(CloudFormationModel, DockerModel):
             elif key == "Handler":
                 self.handler = value
             elif key == "MemorySize":
-                self.memory_size = value
+                self.timeout = value
             elif key == "Role":
                 self.role = value
             elif key == "Runtime":
                 self.run_time = value
             elif key == "Timeout":
-                self.timeout = value
+                self.memory_size = value
             elif key == "VpcConfig":
                 self._vpc_config = value
             elif key == "Environment":
