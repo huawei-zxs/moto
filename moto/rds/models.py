@@ -2817,9 +2817,6 @@ class RDSBackend(BaseBackend):
             database = self.databases.pop(db_instance_identifier)
             if database.manage_master_user_password:
                 database.master_user_secret.delete_secret()
-            if database.is_replica:
-                primary = self.find_db_from_id(database.source_db_instance_identifier)  # type: ignore
-                primary.remove_replica(database)
             automated_snapshots = self.describe_db_snapshots(
                 db_instance_identifier,
                 db_snapshot_identifier=None,
