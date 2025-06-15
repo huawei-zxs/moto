@@ -1808,6 +1808,10 @@ class EC2ContainerServiceBackend(BaseBackend):
                         self.update_cluster_resources(
                             cluster, prop_val, task_state="RUNNING"
                         )
+                        for deployment in current_service.deployments:
+                            deployment["desiredCount"] = prop_val
+                            deployment["runningCount"] = prop_val
+                            deployment["pendingCount"] = 0
             if task_definition_str:
                 self.describe_task_definition(task_definition_str)
                 current_service.task_definition = task_definition_str

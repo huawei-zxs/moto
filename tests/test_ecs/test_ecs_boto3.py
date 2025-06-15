@@ -1507,6 +1507,96 @@ def test_update_service_exceptions():
         client.update_service(service="not_a_service", desiredCount=0)
     assert "ServiceNotFoundException" in exc.value.response["Error"]["Message"]
 
+@mock_aws
+def test_update_service_deployment_sync():
+    """Verify that deployment state stays in sync with service state after update_service."""
+    client = boto3.client("ecs", region_name=ECS_REGION)
+    client.create_cluster(clusterName="test_ecs_cluster")
+    client.register_task_definition(
+        family="test_ecs_task",
+        containerDefinitions=[
+            {
+                "name": "hello_world",
+                "image": "docker/hello-world:latest",
+                "cpu": 1024,
+                "memory": 400,
+                "essential": True,
+                "environment": [
+                    {"name": "AWS_ACCESS_KEY_ID", "value": "SOME_ACCESS_KEY"}
+                ],
+                "logConfiguration": {"logDriver": "json-file"},
+            }
+        ],
+    )
+    client.register_task_definition(
+        family="test_ecs_task_v2",
+        containerDefinitions=[
+            {
+                "name": "hello_world",
+                "image": "docker/hello-world:v2",
+                "cpu": 512,
+                "memory": 200,
+                "essential": True,
+                "environment": [
+                    {"name": "AWS_ACCESS_KEY_ID", "value": "SOME_ACCESS_KEY"}
+                ],
+                "logConfiguration": {"logDriver": "json-file"},
+            }
+        ],
+    )
+
+    # Create service with initial task definition and desired count
+    response = client.create_service(
+        cluster="test_ecs_cluster",
+        serviceName="test_ecs_service",
+        taskDefinition="test_ecs_task",
+        desiredCount=2,
+    )
+    svc = response["service"]
+    deployment = svc["deployments"][0]
+    assert deployment["desiredCount"] == 2
+    assert deployment["pendingCount"] == 2
+    assert deployment["runningCount"] == 0
+    assert deployment["taskDefinition"] == svc["taskDefinition"]
+
+    # Update both desired_count and task_definition
+    response = client.update_service(
+        cluster="test_ecs_cluster",
+        service="test_ecs_service",
+        taskDefinition="test_ecs_task_v2",
+        desiredCount=5,
+    )
+    svc = response["service"]
+    deployment = svc["deployments"][0]
+
+    # Service-level attributes should reflect the new values
+    assert svc["desiredCount"] == 5
+    assert svc["runningCount"] == 5
+    assert svc["pendingCount"] == 0
+
+    # Deployment counters should be synced with service-level values
+    assert deployment["desiredCount"] == svc["desiredCount"], (
+        f"Deployment desiredCount {deployment['desiredCount']} != "
+        f"Service desiredCount {svc['desiredCount']}"
+    )
+    assert deployment["runningCount"] == svc["runningCount"], (
+        f"Deployment runningCount {deployment['runningCount']} != "
+        f"Service runningCount {svc['runningCount']}"
+    )
+    assert deployment["pendingCount"] == svc["pendingCount"], (
+        f"Deployment pendingCount {deployment['pendingCount']} != "
+        f"Service pendingCount {svc['pendingCount']}"
+    )
+
+    # CRITICAL: Deployment taskDefinition MUST match the service taskDefinition
+    assert deployment["taskDefinition"] == svc["taskDefinition"], (
+        f"Deployment taskDefinition '{deployment['taskDefinition']}' != "
+        f"Service taskDefinition '{svc['taskDefinition']}' — "
+        "deployment state not synced when update_service changes task_definition"
+    )
+
+
+
 
 @mock_aws
 def test_register_container_instance():
