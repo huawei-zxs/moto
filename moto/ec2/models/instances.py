@@ -379,7 +379,7 @@ class Instance(TaggedEC2Resource, BotoInstance, CloudFormationModel):
         return self.id
 
     def start(self) -> InstanceState:
-        previous_state = copy.copy(self._state)
+        previous_state = self._state
 
         for nic in self.nics.values():
             nic.start()
