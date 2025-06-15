@@ -170,7 +170,7 @@ class SignerBackend(BaseBackend):
         self.signing_profiles[profile_name].cancel()
 
     def get_signing_profile(self, profile_name: str) -> SigningProfile:
-        return self.signing_profiles[profile_name]
+        return self.signing_profiles.get(profile_name)
 
     def put_signing_profile(
         self,
