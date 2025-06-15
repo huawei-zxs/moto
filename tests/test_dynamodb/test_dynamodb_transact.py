@@ -679,3 +679,76 @@ def test_transact_using_arns():
         TransactItems=[{"Get": {"Key": {"id": {"S": "foo"}}, "TableName": table_arn}}]
     )["Responses"]
     assert items == [{"Item": {"id": {"S": "foo"}}}]
+
+
+@mock_aws
+def test_transact_write_items_rollback_on_condition_check_failure():
+    """
+    Verify that when a transaction fails midway, ALL prior successful
+    operations are rolled back. This is the key atomicity guarantee of
+    DynamoDB transactions.
+
+    Scenario:
+    1. Pre-existing item: {"id": "foo"}
+    2. Transaction:
+       a. Put {"id": "bar"}   (succeeds, no condition)
+       b. Put {"id": "baz"}   (succeeds, no condition)
+       c. ConditionCheck on {"id": "foo"} with a failing condition
+          (MUST trigger TransactionCanceledException)
+    3. After failure: ONLY {"id": "foo"} should remain.
+       {"id": "bar"} and {"id": "baz"} must be rolled back.
+    """
+    table_schema = {
+        "KeySchema": [{"AttributeName": "id", "KeyType": "HASH"}],
+        "AttributeDefinitions": [{"AttributeName": "id", "AttributeType": "S"}],
+    }
+    dynamodb = boto3.client("dynamodb", region_name="us-east-1")
+    dynamodb.create_table(
+        TableName="test-table", BillingMode="PAY_PER_REQUEST", **table_schema
+    )
+    # Pre-existing item
+    dynamodb.put_item(TableName="test-table", Item={"id": {"S": "foo"}})
+
+    # Transaction: two successful Puts followed by a failing ConditionCheck.
+    # The ConditionCheck should fail, causing the entire transaction to
+    # roll back — both "bar" and "baz" must be undone.
+    with pytest.raises(ClientError) as ex:
+        dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Put": {
+                        "Item": {"id": {"S": "bar"}, "val": {"S": "should-be-rolled-back"}},
+                        "TableName": "test-table",
+                    }
+                },
+                {
+                    "Put": {
+                        "Item": {"id": {"S": "baz"}, "val": {"S": "should-be-rolled-back"}},
+                        "TableName": "test-table",
+                    }
+                },
+                {
+                    "ConditionCheck": {
+                        "Key": {"id": {"S": "foo"}},
+                        "TableName": "test-table",
+                        # foo exists, so attribute_not_exists should fail
+                        "ConditionExpression": "attribute_not_exists(#id)",
+                        "ExpressionAttributeNames": {"#id": "id"},
+                    }
+                },
+            ]
+        )
+
+    # Verify the exception
+    assert ex.value.response["Error"]["Code"] == "TransactionCanceledException"
+    assert ex.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+    # CRITICAL: After rollback, ONLY "foo" must remain.
+    # "bar" and "baz" must NOT be present (they were rolled back).
+    items = dynamodb.scan(TableName="test-table")["Items"]
+    assert len(items) == 1, (
+        f"Expected 1 item (only 'foo') after rollback, but got {len(items)}: {items}"
+    )
+    assert items[0] == {"id": {"S": "foo"}}, (
+        f"Expected only the pre-existing item, got: {items}"
+    )

@@ -592,7 +592,7 @@ class DynamoDBBackend(BaseBackend):
         if len(transact_items) > 100:
             raise TooManyTransactionsException()
         # Create a backup in case any of the transactions fail
-        original_table_state = copy.deepcopy(self.tables)
+        original_table_state = copy.copy(self.tables)
         target_items: Set[Tuple[str, str]] = set()
 
         def check_unicity(table_name: str, key: Dict[str, Any]) -> None:
