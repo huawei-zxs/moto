@@ -2422,11 +2422,10 @@ class S3Backend(BaseBackend, CloudWatchMetricProvider):
 
         tags_input = self.tagger.convert_dict_to_tags_input(tags)
         # Validation custom to S3
-        if tags:
-            if len(tags_input) > 10:
-                raise BadRequest("Object tags cannot be greater than 10")
-            if any([tagkey.startswith("aws") for tagkey in tags.keys()]):
-                raise InvalidTagError("Your TagKey cannot be prefixed with aws:")
+        if len(tags_input) > 10:
+            raise BadRequest("Object tags cannot be greater than 10")
+        if any([tagkey.startswith("aws") for tagkey in tags.keys()]):
+            raise InvalidTagError("Your TagKey cannot be prefixed with aws:")
         # Validation shared across all services
         errmsg = self.tagger.validate_tags(tags_input)
         if errmsg:

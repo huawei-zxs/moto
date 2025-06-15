@@ -481,3 +481,60 @@ def test_generate_url_for_tagged_object():
     response = requests.get(url, **kwargs)
     assert response.content == b"abc"
     assert response.headers["x-amz-tagging-count"] == "1"
+
+
+@mock_aws
+def test_put_object_tagging_with_tags_none():
+    """put_object_tagging should accept tags=None without crashing."""
+    from moto.s3.models import s3_backends
+
+    backend = s3_backends["123456789012"]["aws"]
+    bucket_name = "test-bucket"
+    key_name = "test-key"
+
+    backend.create_bucket(bucket_name, region_name=DEFAULT_REGION_NAME)
+    key = backend.put_object(
+        bucket_name=bucket_name, key_name=key_name, value=b"test"
+    )
+
+    # This should NOT crash - tags=None is valid per type signature
+    backend.put_object_tagging(key=key, tags=None, key_name=key_name)
+
+
+@mock_aws
+def test_complete_multipart_upload_tags_none():
+    """Completing a multipart upload with tags=None should not crash.
+
+    When multipart.tags is None (no tags provided), completing the upload
+    calls put_object_tagging(key, None) internally at models.py:2638.
+    This should handle the None value gracefully.
+    """
+    from moto.s3.models import s3_backends
+
+    backend = s3_backends["123456789012"]["aws"]
+    bucket_name = "test-bucket"
+    key_name = "test-key"
+
+    backend.create_bucket(bucket_name, region_name=DEFAULT_REGION_NAME)
+
+    # Create multipart upload with no tags
+    multipart_id = backend.create_multipart_upload(
+        bucket_name=bucket_name,
+        key_name=key_name,
+        metadata={},
+        storage_type="STANDARD",
+        tags=None,
+        acl=None,
+        sse_encryption=None,
+        kms_key_id=None,
+    )
+
+    # Upload a part and get the real etag
+    part = backend.upload_part(bucket_name, multipart_id, 1, b"test data")
+    real_etag = part.etag.replace('"', "")
+
+    # Complete the upload with the real etag
+    # This internally calls put_object_tagging(key, multipart.tags) where tags=None
+    backend.complete_multipart_upload(
+        bucket_name, multipart_id, [(1, real_etag)]
+    )
