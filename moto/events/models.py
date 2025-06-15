@@ -1038,12 +1038,9 @@ class EventPatternParser:
                 )
 
     def parse(self) -> Dict[str, Any]:
-        try:
-            parsed_pattern = json.loads(self.pattern) if self.pattern else dict()
-            self._validate_event_pattern(parsed_pattern)
-            return parsed_pattern
-        except JSONDecodeError:
-            raise InvalidEventPatternException(reason="Invalid JSON")
+        parsed_pattern = json.loads(self.pattern) if self.pattern else dict()
+        self._validate_event_pattern(parsed_pattern)
+        return parsed_pattern
 
 
 class PartnerEventSource(BaseModel):
