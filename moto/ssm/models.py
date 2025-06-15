@@ -268,7 +268,7 @@ class Parameter(CloudFormationModel):
                 policy_list = json.loads(self.policies)
                 r["Policies"] = [
                     {"PolicyText": p, "PolicyType": p, "PolicyStatus": "Finished"}
-                    for p in policy_list
+                    for p in self.policies
                 ]
             except json.JSONDecodeError:
                 pass
