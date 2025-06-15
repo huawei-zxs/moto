@@ -456,12 +456,6 @@ class SecretsManagerBackend(BaseBackend):
         version_id = version_id or secret.default_version_id or "AWSCURRENT"
 
         secret_version = secret.versions.get(version_id)
-        if not secret_version:
-            _type = "staging label" if not version_id_provided else "VersionId"
-            raise ResourceNotFoundException(
-                f"Secrets Manager can't find the specified secret value for {_type}: {version_id}"
-            )
-
         response_data = {
             "ARN": secret.arn,
             "Name": secret.name,
