@@ -733,6 +733,48 @@ def test_state_machine_describe_execution_with_custom_input():
 
 
 @mock_aws
+def test_state_machine_describe_execution_input_output_parity():
+    client = boto3.client("stepfunctions", region_name=region)
+    sm = client.create_state_machine(
+        name="name", definition=str(simple_definition), roleArn=_get_default_role()
+    )
+
+    # Test with integer values in JSON input
+    execution_input = json.dumps({"count": 42, "items": 3, "enabled": True})
+    execution = client.start_execution(
+        stateMachineArn=sm["stateMachineArn"], input=execution_input
+    )
+    description = client.describe_execution(executionArn=execution["executionArn"])
+
+    # The input should round-trip exactly
+    assert description["input"] == execution_input, (
+        f"Input/output mismatch! Expected: {execution_input}, "
+        f"Got: {description['input']}"
+    )
+
+
+@mock_aws
+def test_state_machine_describe_execution_large_integer_precision():
+    client = boto3.client("stepfunctions", region_name=region)
+    sm = client.create_state_machine(
+        name="name", definition=str(simple_definition), roleArn=_get_default_role()
+    )
+
+    # Test with a large integer that would lose precision if parsed as float
+    large_int = 9999999999999999
+    execution_input = json.dumps({"large_id": large_int})
+    execution = client.start_execution(
+        stateMachineArn=sm["stateMachineArn"], input=execution_input
+    )
+    description = client.describe_execution(executionArn=execution["executionArn"])
+
+    # The input should round-trip exactly without precision loss
+    assert description["input"] == execution_input, (
+        f"Precision loss detected! Expected: {execution_input}, "
+        f"Got: {description['input']}"
+    )
+
+@mock_aws
 def test_execution_throws_error_when_describing_unknown_execution():
     client = boto3.client("stepfunctions", region_name=region)
     #
