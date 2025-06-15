@@ -953,7 +953,7 @@ class EventPattern:
     def matches_event(self, event: EventMessageType) -> bool:
         if not self._pattern:
             return True
-        event = json.loads(json.dumps(event))
+        # BUG: Removed JSON round-trip normalization, causing type mismatches
         return self._does_event_match(event, self._pattern)
 
     def _does_event_match(

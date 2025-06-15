@@ -105,3 +105,25 @@ def test_event_pattern_with_multi_numeric_event_filter():
 def test_event_pattern_dump(pattern, expected_str):
     event_pattern = EventPattern.load(pattern)
     assert event_pattern.dump() == expected_str
+
+
+def test_event_pattern_with_tuple_values_normalized_to_list():
+    # Events may contain tuple values when constructed from ORM
+    # or internal data sources. The JSON round-trip normalization in
+    # matches_event() converts these tuples to lists for proper matching.
+    pattern = EventPattern.load(
+        json.dumps({"detail": {"tags": {"env": ["prod", "staging"]}}})
+    )
+    # Event with tuple values (as might come from non-API event sources)
+    event = {"detail": {"tags": {"env": ("prod", "staging")}}}
+    assert pattern.matches_event(event)
+
+
+def test_event_pattern_with_nested_tuple_values():
+    pattern = EventPattern.load(
+        json.dumps({"detail": {"items": ["a", "b", "c"]}})
+    )
+    # Deeply nested structure where inner values are tuples
+    # These would be normalized to lists by the JSON round-trip
+    event = {"detail": {"items": ("a", "b", "c")}}
+    assert pattern.matches_event(event)
