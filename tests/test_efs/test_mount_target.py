@@ -360,3 +360,13 @@ def test_delete_mount_target_invalid_mount_target_id(efs):
     resp = exc_info.value.response
     assert has_status_code(resp, 404)
     assert "MountTargetNotFound" == resp["Error"]["Code"]
+
+
+def test_describe_mount_targets__invalid_access_point_id(efs, file_system):
+    # When given an AccessPointId that does not exist, the API should
+    # raise an AccessPointNotFound error.
+    with pytest.raises(ClientError) as exc_info:
+        efs.describe_mount_targets(AccessPointId="fsap-nonexistent")
+    resp = exc_info.value.response
+    assert has_status_code(resp, 404)
+    assert "AccessPointNotFound" == resp["Error"]["Code"]

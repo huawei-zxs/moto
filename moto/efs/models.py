@@ -596,7 +596,7 @@ class EFSBackend(BaseBackend):
             raise BadRequest("Must specify exactly one mutually exclusive parameter.")
 
         if access_point_id:
-            file_system_id = self.access_points[access_point_id].file_system_id
+            file_system_id = self.access_points.get(access_point_id).file_system_id
 
         if file_system_id:
             # Handle the case that a file_system_id is given.
