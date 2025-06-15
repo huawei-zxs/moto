@@ -3659,3 +3659,31 @@ def test_db_instance_identifier_is_case_insensitive(client):
 
     response = client.describe_db_instances()
     assert len(response["DBInstances"]) == 0
+
+
+@mock_aws
+def test_restore_db_instance_to_point_in_time_latest_restorable_time_preserves_dbname(client):
+    """UseLatestRestorableTime parameter should preserve DBName just like
+    a normal point-in-time restore without RestoreTime."""
+    create_db_instance(
+        DBInstanceIdentifier="db-source-1",
+        Engine="postgres",
+        DBName="mydatabase",
+        DBInstanceClass="db.m1.small",
+    )
+
+    # Restore with UseLatestRestorableTime=True (no explicit RestoreTime)
+    restored = client.restore_db_instance_to_point_in_time(
+        SourceDBInstanceIdentifier="db-source-1",
+        TargetDBInstanceIdentifier="db-restore-latest",
+        UseLatestRestorableTime=True,
+    )["DBInstance"]
+
+    # DBName must be preserved — it was set on the source and not overridden
+    assert restored["DBName"] == "mydatabase", (
+        f"Expected DBName 'mydatabase' but got '{restored.get('DBName')}' — "
+        "UseLatestRestorableTime should not strip the database name"
+    )
+    assert restored["DBInstanceIdentifier"] == "db-restore-latest"
+    assert restored["Engine"] == "postgres"
+    assert restored["DBInstanceClass"] == "db.m1.small"

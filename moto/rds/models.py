@@ -2672,6 +2672,12 @@ class RDSBackend(BaseBackend):
             new_instance_props[key] = copy.deepcopy(value)
         new_instance_props["db_name"] = db_instance.db_name
 
+        # Handle UseLatestRestorableTime parameter
+        if overrides.get("use_latest_restorable_time"):
+            # When restoring with UseLatestRestorableTime and no explicit
+            # DBName provided, the db_name is not carried over
+            del new_instance_props["db_name"]
+
         if not db_instance.option_group_supplied:
             # If the option group is not supplied originally, the 'option_group_name' will receive a default value
             # Force this reconstruction, and prevent any validation on the default value
