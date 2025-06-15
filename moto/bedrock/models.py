@@ -46,7 +46,7 @@ class ModelCustomizationJob(BaseModel):
         self.custom_model_kms_key_id = custom_model_kms_key_id
         self.job_tags = job_tags
         self.custom_model_tags = custom_model_tags
-        if "s3Uri" not in training_data_config or not re.match(
+        if "s3Uri" not in training_data_config or not re.search(
             r"s3://.*", training_data_config["s3Uri"]
         ):
             raise ValidationException(
