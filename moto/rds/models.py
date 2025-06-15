@@ -2769,9 +2769,9 @@ class RDSBackend(BaseBackend):
             raise InvalidDBClusterStateFaultError(db_instance_identifier)
         if database.status != "available":
             raise InvalidDBInstanceStateError(db_instance_identifier, "stop")
+        database.status = "stopped"
         if db_snapshot_identifier:
             self.create_db_snapshot(db_instance_identifier, db_snapshot_identifier)
-        database.status = "stopped"
         return database
 
     def start_db_instance(self, db_instance_identifier: str) -> DBInstance:
