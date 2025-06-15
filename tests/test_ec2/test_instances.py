@@ -3067,3 +3067,30 @@ def test_modify_instance_metadata_options():
         "HttpProtocolIpv6": "enabled",
         "InstanceMetadataTags": "enabled",
     }
+
+
+@mock_aws
+def test_start_terminated_instance_should_fail():
+    """
+    In AWS, attempting to start a terminated instance raises IncorrectInstanceState
+    because 'terminated' is a permanent terminal state. This test verifies that
+    the state management correctly rejects starting terminated instances.
+    """
+    client = boto3.client("ec2", region_name="us-east-1")
+
+    # Create and terminate an instance
+    reservation = client.run_instances(ImageId=EXAMPLE_AMI_ID, MinCount=1, MaxCount=1)
+    instance_id = reservation["Instances"][0]["InstanceId"]
+    client.terminate_instances(InstanceIds=[instance_id])
+
+    # Verify the instance is in terminated state
+    instances = client.describe_instances(InstanceIds=[instance_id])["Reservations"][0]["Instances"]
+    assert instances[0]["State"] == {"Code": 48, "Name": "terminated"}
+
+    # Attempting to start a terminated instance should raise IncorrectInstanceState
+    with pytest.raises(ClientError) as ex:
+        client.start_instances(InstanceIds=[instance_id])
+    error = ex.value.response["Error"]
+    assert error["Code"] == "IncorrectInstanceState"
+    assert instance_id in error["Message"]
+    assert "terminated" in error["Message"]

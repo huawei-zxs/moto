@@ -886,3 +886,13 @@ class AuthFailureRestricted(RESTError):
             "AuthFailure",
             "Unauthorized attempt to access restricted resource",
         )
+
+
+class IncorrectInstanceStateError(EC2ClientError):
+    def __init__(self, instance_id: str, state_name: str):
+        super().__init__(
+            "IncorrectInstanceState",
+            f"The instance '{instance_id}' is not in a state from which it can "
+            f"be started. The instance is in state '{state_name}', which is not "
+            f"a valid state for the requested operation.",
+        )

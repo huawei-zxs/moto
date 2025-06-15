@@ -23,6 +23,7 @@ from ..exceptions import (
     AvailabilityZoneNotFromRegionError,
     InvalidInputError,
     InvalidInstanceIdError,
+    IncorrectInstanceStateError,
     InvalidInstanceTypeError,
     InvalidParameterCombination,
     InvalidParameterValueErrorUnknownAttribute,
@@ -380,6 +381,15 @@ class Instance(TaggedEC2Resource, BotoInstance, CloudFormationModel):
 
     def start(self) -> InstanceState:
         previous_state = copy.copy(self._state)
+
+        # BUG: State validation uses incorrect condition.
+        # Only blocks starting instances that are already "running",
+        # but fails to block starting "terminated" instances.
+        # Correct check should be: if self._state.name != "stopped"
+        if self._state.name == "running":
+            raise IncorrectInstanceStateError(
+                instance_id=self.id, state_name=self._state.name
+            )
 
         for nic in self.nics.values():
             nic.start()
