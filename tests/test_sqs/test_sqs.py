@@ -3477,3 +3477,66 @@ def test_send_message_delay_seconds_validation(queue_config):
 
     # clean up for servertests
     client.delete_queue(QueueUrl=q)
+
+
+@mock_aws
+def test_receive_message_with_binary_custom_type_attribute():
+    # Test that receiving a message with a Binary data type that has a
+    # custom suffix (e.g. "Binary.customType") correctly returns the
+    # value in the BinaryValue field rather than StringValue.
+    client = boto3.client("sqs", region_name=REGION)
+    queue_url = client.create_queue(QueueName=str(uuid4())[0:6])["QueueUrl"]
+
+    binary_payload = "aGVsbG8gd29ybGQ="  # base64 of "hello world"
+
+    client.send_message(
+        QueueUrl=queue_url,
+        MessageBody="test message",
+        MessageAttributes={
+            "custom_bin": {
+                "DataType": "Binary.customType",
+                "BinaryValue": binary_payload,
+            },
+            "regular_str": {
+                "DataType": "String",
+                "StringValue": "hello",
+            },
+            "regular_bin": {
+                "DataType": "Binary",
+                "BinaryValue": binary_payload,
+            },
+            "num_type": {
+                "DataType": "Number.java.lang.Long",
+                "StringValue": "1234567890",
+            },
+        },
+    )
+
+    resp = client.receive_message(
+        QueueUrl=queue_url,
+        MessageAttributeNames=["All"],
+    )
+
+    messages = resp.get("Messages", [])
+    assert len(messages) == 1
+
+    attrs = messages[0]["MessageAttributes"]
+
+    # Binary.customType should be serialized with BinaryValue
+    assert "BinaryValue" in attrs["custom_bin"], (
+        f"Expected BinaryValue for custom_bin (DataType=Binary.customType), "
+        f"got keys: {list(attrs['custom_bin'].keys())}"
+    )
+    assert attrs["custom_bin"]["BinaryValue"] == binary_payload.encode()
+
+    # Pure Binary should also be serialized with BinaryValue (regression check)
+    assert "BinaryValue" in attrs["regular_bin"]
+    assert attrs["regular_bin"]["BinaryValue"] == binary_payload.encode()
+
+    # String type should be serialized with StringValue
+    assert "StringValue" in attrs["regular_str"]
+    assert attrs["regular_str"]["StringValue"] == "hello"
+
+    # Number type with custom suffix should be serialized with StringValue
+    assert "StringValue" in attrs["num_type"]
+    assert attrs["num_type"]["StringValue"] == "1234567890"

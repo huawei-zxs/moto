@@ -667,7 +667,7 @@ class SQSResponse(BaseResponse):
                     msg["Attributes"]["SequenceNumber"] = message.sequence_number
                 for name, value in message.message_attributes.items():
                     msg["MessageAttributes"][name] = {"DataType": value["data_type"]}
-                    if "Binary" in value["data_type"]:
+                    if value["data_type"] == "Binary":
                         msg["MessageAttributes"][name]["BinaryValue"] = value[
                             "binary_value"
                         ]
