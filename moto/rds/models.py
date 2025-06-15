@@ -1478,6 +1478,7 @@ class DBInstance(EventMixin, CloudFormationModel, RDSBaseModel):
         self.enabled_cloudwatch_logs_exports.extend(
             cwl_exports.get("EnableLogTypes", [])
         )
+        self.status = "available"
 
     @classmethod
     def has_cfn_attr(cls, attr: str) -> bool:
