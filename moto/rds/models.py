@@ -3234,7 +3234,7 @@ class RDSBackend(BaseBackend):
             if v is not None:
                 setattr(cluster, k, v)
 
-        cwl_exports = kwargs.get("enable_cloudwatch_logs_exports") or {}
+        cwl_exports = kwargs.get("enable_cloudwatch_logs_exports")
         for exp in cwl_exports.get("DisableLogTypes", []):
             cluster.enabled_cloudwatch_logs_exports.remove(exp)
         cluster.enabled_cloudwatch_logs_exports.extend(
