@@ -40,6 +40,8 @@ class SNSResponse(BaseResponse):
         message_attributes = self._get_object_map(
             "MessageAttributes.entry", name="Name", value="Value"
         )
+        if not message_attributes:
+            return None
         return self._transform_message_attributes(message_attributes)
 
     def _transform_message_attributes(
