@@ -1612,7 +1612,7 @@ class FakeBucket(CloudFormationModel):
         }
 
         s_config["BucketPolicy"] = {
-            "policyText": self.policy.decode("utf-8") if self.policy else None
+            "policyText": self.policy.decode("utf-8")
         }
 
         s_config["IsRequesterPaysEnabled"] = (
