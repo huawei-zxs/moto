@@ -3254,7 +3254,6 @@ class RDSBackend(BaseBackend):
     def promote_read_replica_db_cluster(self, db_cluster_identifier: str) -> DBCluster:
         cluster = self.clusters[db_cluster_identifier]
         source_cluster = find_cluster(cluster.replication_source_identifier)  # type: ignore
-        source_cluster.read_replica_identifiers.remove(cluster.db_cluster_arn)
         cluster.replication_source_identifier = None
         return cluster
 
