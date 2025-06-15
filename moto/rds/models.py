@@ -3423,6 +3423,8 @@ class RDSBackend(BaseBackend):
         )[0]
         original_cluster = snapshot.cluster
         new_cluster_props = copy.copy(original_cluster.get_cfg())
+        # BUG: scaling_configuration can be None for non-serverless clusters
+        _scaling = new_cluster_props["scaling_configuration"].get("min_capacity")
         for key, value in overrides.items():
             if value:
                 new_cluster_props[key] = value
