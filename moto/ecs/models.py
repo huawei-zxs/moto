@@ -1471,9 +1471,7 @@ class EC2ContainerServiceBackend(BaseBackend):
                     "Memory", container_definition.get("MemoryReservation")
                 )
             else:
-                resource_requirements["MEMORY"] += container_definition.get(
-                    "memory", container_definition.get("memoryReservation")
-                )
+                resource_requirements["MEMORY"] += container_definition.get("memory")
 
             port_mapping_key = (
                 "PortMappings"
