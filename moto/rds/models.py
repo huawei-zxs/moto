@@ -3232,6 +3232,12 @@ class RDSBackend(BaseBackend):
             if k == "db_cluster_parameter_group_name":
                 k = "parameter_group"
             if v is not None:
+                # BUG INJECTION: setattr updates cluster.db_cluster_identifier to
+                # the new identifier, but DBInstanceClustered instances still hold
+                # the OLD db_cluster_identifier (assigned once during __init__ at
+                # line 1635). _members() then filters by self.resource_id (the new
+                # identifier), so all member instances become silently detached.
+                # The cluster appears to have zero members after the rename.
                 setattr(cluster, k, v)
 
         cwl_exports = kwargs.get("enable_cloudwatch_logs_exports") or {}

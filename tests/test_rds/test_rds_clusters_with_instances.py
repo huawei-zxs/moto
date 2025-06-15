@@ -145,3 +145,50 @@ def test_create_instance_with_non_existent_cluster_raises_error():
     assert err["Code"] == "DBClusterNotFoundFault"
     assert cluster_identifier in err["Message"]
     assert "could not be found" in err["Message"]
+
+
+@mock_aws
+def test_rename_db_cluster_preserves_members():
+    """Renaming a DB cluster should preserve its member instances."""
+    client = boto3.client("rds", "us-east-1")
+
+    # Create a cluster with two instances
+    client.create_db_cluster(
+        DBClusterIdentifier="old-cluster-id",
+        Engine="aurora-postgresql",
+        MasterUsername="root",
+        MasterUserPassword="hunter2000",
+    )
+    client.create_db_instance(
+        DBInstanceIdentifier="instance-1",
+        DBClusterIdentifier="old-cluster-id",
+        Engine="aurora-postgresql",
+        DBInstanceClass="db.r5.large",
+    )
+    client.create_db_instance(
+        DBInstanceIdentifier="instance-2",
+        DBClusterIdentifier="old-cluster-id",
+        Engine="aurora-postgresql",
+        DBInstanceClass="db.r5.large",
+    )
+
+    # Verify members exist before rename
+    before = client.describe_db_clusters(
+        DBClusterIdentifier="old-cluster-id"
+    )["DBClusters"][0]
+    assert len(before["DBClusterMembers"]) == 2
+
+    # Rename the cluster
+    client.modify_db_cluster(
+        DBClusterIdentifier="old-cluster-id",
+        NewDBClusterIdentifier="new-cluster-id",
+    )
+
+    # After rename, the cluster should still have 2 members
+    after = client.describe_db_clusters(
+        DBClusterIdentifier="new-cluster-id"
+    )["DBClusters"][0]
+    assert after["DBClusterIdentifier"] == "new-cluster-id"
+    assert len(after["DBClusterMembers"]) == 2, (
+        f"Expected 2 members after rename, got {len(after['DBClusterMembers'])}"
+    )
