@@ -34,7 +34,7 @@ class StringToJson(StatesFunction):
 
         string_json: str = args.pop()
 
-        if string_json is not None and string_json.strip():
+        if string_json is not None:
             json_obj: json = json.loads(string_json)
         else:
             json_obj: json = None
