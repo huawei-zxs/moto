@@ -371,7 +371,10 @@ class SQSResponse(BaseResponse):
             if "BinaryValue" in value:
                 message_attributes[key]["binary_value"] = value.pop("BinaryValue")
             if "StringValue" in value:
-                message_attributes[key]["string_value"] = value.pop("StringValue")
+                if value.get("DataType", "") == "Number":
+                    message_attributes[key]["binary_value"] = value.pop("StringValue")
+                else:
+                    message_attributes[key]["string_value"] = value.pop("StringValue")
             if "DataType" in value:
                 message_attributes[key]["data_type"] = value.pop("DataType")
 
@@ -667,7 +670,7 @@ class SQSResponse(BaseResponse):
                     msg["Attributes"]["SequenceNumber"] = message.sequence_number
                 for name, value in message.message_attributes.items():
                     msg["MessageAttributes"][name] = {"DataType": value["data_type"]}
-                    if "Binary" in value["data_type"]:
+                    if value.get("binary_value") is not None:
                         msg["MessageAttributes"][name]["BinaryValue"] = value[
                             "binary_value"
                         ]
