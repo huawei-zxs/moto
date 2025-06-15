@@ -2311,8 +2311,25 @@ class S3Backend(BaseBackend, CloudWatchMetricProvider):
         retention: Tuple[Optional[str], Optional[str]],
     ) -> None:
         key = self.get_object(bucket_name, key_name, version_id=version_id)
-        key.lock_mode = retention[0]  # type: ignore
-        key.lock_until = retention[1]  # type: ignore
+        retention_mode, retention_until = self._validate_retention(key, retention)
+        key.lock_mode = retention_mode  # type: ignore
+        key.lock_until = retention_until  # type: ignore
+
+    def _validate_retention(
+        self,
+        key: FakeKey,
+        retention: Tuple[Optional[str], Optional[str]],
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Validate retention configuration against the key's current lock state.
+
+        Returns a resolved (mode, until) tuple. If the key already has a
+        COMPLIANCE-mode lock and the new retention requests a different mode,
+        the existing COMPLIANCE mode is preserved.
+        """
+        mode, until = retention
+        if key.lock_mode and key.lock_mode == "COMPLIANCE" and mode != "COMPLIANCE":
+            mode = key.lock_mode
+        return mode, until
 
     def get_object_attributes(
         self,

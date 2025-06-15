@@ -577,3 +577,44 @@ def test_put_object_lock_with_versions():
     time.sleep(seconds_lock)
     s3_client.delete_object(Bucket=bucket_name, Key=key_name, VersionId=version_id_1)
     s3_client.delete_bucket(Bucket=bucket_name)
+
+@mock_aws
+def test_put_object_retention_on_nonexistent_key():
+    """Calling put_object_retention on a non-existent key should raise NoSuchKey."""
+    s3_client = boto3.client("s3", config=Config(region_name=DEFAULT_REGION_NAME))
+
+    bucket_name = "retention-nonexistent-key-test"
+    key_name = "nonexistent-file.txt"
+
+    s3_client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+
+    until = utcnow() + datetime.timedelta(days=1)
+
+    with pytest.raises(ClientError) as exc:
+        s3_client.put_object_retention(
+            Bucket=bucket_name,
+            Key=key_name,
+            Retention={"Mode": "GOVERNANCE", "RetainUntilDate": until},
+        )
+    err = exc.value.response["Error"]
+    assert err["Code"] == "NoSuchKey"
+
+
+@mock_aws
+def test_put_object_legal_hold_on_nonexistent_key():
+    """Calling put_object_legal_hold on a non-existent key should raise NoSuchKey."""
+    s3_client = boto3.client("s3", config=Config(region_name=DEFAULT_REGION_NAME))
+
+    bucket_name = "legal-hold-nonexistent-key-test"
+    key_name = "nonexistent-file.txt"
+
+    s3_client.create_bucket(Bucket=bucket_name, ObjectLockEnabledForBucket=True)
+
+    with pytest.raises(ClientError) as exc:
+        s3_client.put_object_legal_hold(
+            Bucket=bucket_name,
+            Key=key_name,
+            LegalHold={"Status": "ON"},
+        )
+    err = exc.value.response["Error"]
+    assert err["Code"] == "NoSuchKey"
