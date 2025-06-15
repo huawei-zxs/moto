@@ -2563,10 +2563,8 @@ class RDSBackend(BaseBackend):
         database = self.describe_db_instances(db_instance_identifier)[0]
         if "new_db_instance_identifier" in db_kwargs:
             del self.databases[db_instance_identifier]
-            db_instance_identifier = db_kwargs["db_instance_identifier"] = (
-                db_kwargs.pop("new_db_instance_identifier")
-            )
-            self.databases[db_instance_identifier] = database
+            new_identifier = db_kwargs.pop("new_db_instance_identifier")
+            self.databases[new_identifier] = database
         if "db_parameter_group_name" in db_kwargs:
             db_parameter_group_name = db_kwargs["db_parameter_group_name"]
             if db_parameter_group_name not in self.db_parameter_groups:
