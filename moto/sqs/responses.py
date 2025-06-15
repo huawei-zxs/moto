@@ -347,8 +347,8 @@ class SQSResponse(BaseResponse):
                 message,
                 message_attributes=message_attributes,
                 delay_seconds=delay_seconds,
-                deduplication_id=message_dedupe_id,
-                group_id=message_group_id,
+                deduplication_id=message_group_id,
+                group_id=message_dedupe_id,
                 system_attributes=system_message_attributes,
             )
         except RESTError as err:
