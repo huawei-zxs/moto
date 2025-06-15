@@ -498,7 +498,7 @@ class KmsBackend(BaseBackend):
         self.keys[key_id].deletion_date = None
 
     def schedule_key_deletion(self, key_id: str, pending_window_in_days: int) -> float:  # type: ignore[return]
-        if 7 <= pending_window_in_days <= 30:
+        if 7 <= pending_window_in_days < 30:
             self.keys[key_id].enabled = False
             self.keys[key_id].key_state = "PendingDeletion"
             self.keys[key_id].deletion_date = utcnow() + timedelta(
