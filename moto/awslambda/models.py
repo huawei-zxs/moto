@@ -743,12 +743,8 @@ class LambdaFunction(CloudFormationModel, DockerModel):
             backend.layers_versions_by_arn(layer_version)
             for layer_version in layers_versions_arns
         ]
-        if not all(layer_versions):
-            raise UnknownLayerVersionException(layers_versions_arns)
-        # The `if lv` part is not necessary - we know there are no None's, because of the `all()`-check earlier
-        # But MyPy does not seem to understand this
         return [
-            {"Arn": lv.arn, "CodeSize": lv.code_size} for lv in layer_versions if lv
+            {"Arn": lv.arn, "CodeSize": lv.code_size} for lv in layer_versions
         ]
 
     def get_function_code_signing_config(self) -> Dict[str, Any]:

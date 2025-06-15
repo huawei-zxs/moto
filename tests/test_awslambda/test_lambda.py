@@ -1621,6 +1621,62 @@ def test_create_function_with_unknown_arn():
 
 
 @mock_aws
+def test_create_function_with_nonexistent_layer():
+    """Test that creating a function with a non-existent layer version ARN
+    raises a proper error instead of an internal AttributeError."""
+    conn = boto3.client("lambda", _lambda_region)
+    function_name = str(uuid4())[0:6]
+    zip_content = get_test_zip_file1()
+
+    fake_layer_arn = (
+        f"arn:aws:lambda:{_lambda_region}:{ACCOUNT_ID}:layer:nonexistent-layer:1"
+    )
+
+    with pytest.raises(ClientError) as exc:
+        conn.create_function(
+            FunctionName=function_name,
+            Runtime=PYTHON_VERSION,
+            Role=get_role_name(),
+            Handler="lambda_function.handler",
+            Code={"ZipFile": zip_content},
+            Layers=[fake_layer_arn],
+        )
+    err = exc.value.response["Error"]
+    assert err["Code"] == "ResourceNotFoundException"
+    assert "nonexistent-layer" in err["Message"]
+
+
+@mock_aws
+def test_update_function_config_with_nonexistent_layer():
+    """Test that updating function config with a non-existent layer version ARN
+    raises a proper error instead of an internal AttributeError."""
+    conn = boto3.client("lambda", _lambda_region)
+    function_name = str(uuid4())[0:6]
+    zip_content = get_test_zip_file1()
+
+    conn.create_function(
+        FunctionName=function_name,
+        Runtime=PYTHON_VERSION,
+        Role=get_role_name(),
+        Handler="lambda_function.handler",
+        Code={"ZipFile": zip_content},
+    )
+
+    fake_layer_arn = (
+        f"arn:aws:lambda:{_lambda_region}:{ACCOUNT_ID}:layer:nonexistent-layer:1"
+    )
+
+    with pytest.raises(ClientError) as exc:
+        conn.update_function_configuration(
+            FunctionName=function_name,
+            Layers=[fake_layer_arn],
+        )
+    err = exc.value.response["Error"]
+    assert err["Code"] == "ResourceNotFoundException"
+    assert "nonexistent-layer" in err["Message"]
+
+
+@mock_aws
 def test_remove_unknown_permission_throws_error():
     conn = boto3.client("lambda", _lambda_region)
     zip_content = get_test_zip_file1()
