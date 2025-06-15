@@ -1026,7 +1026,7 @@ class Table(CloudFormationModel):
             if attr in item.attrs and item.attrs[attr] != DynamoType(dct.get(attr)):  # type: ignore
                 return (
                     (item.attrs[attr] < DynamoType(dct.get(attr)))  # type: ignore
-                    == scan_index_forward
+                    != scan_index_forward
                 )
         # Keys were equal, items are identical
         return True

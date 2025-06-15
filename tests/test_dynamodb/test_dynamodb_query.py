@@ -892,3 +892,64 @@ def test_key_condition_expression_with_brackets(table_name=None):
         ExpressionAttributeValues={":0": "TEST", ":1": "ab", ":2": "ab"},
     )
     assert results["Items"] == [{"pk": "TEST", "sk": "ab"}]
+
+
+@mock_aws
+def test_query_reverse_pagination_with_exclusive_start_key():
+    """Test pagination with ScanIndexForward=False and ExclusiveStartKey."""
+    client = boto3.client("dynamodb", region_name="us-east-1")
+
+    # Create table with hash + range key
+    client.create_table(
+        TableName="test_reverse_pagination",
+        KeySchema=[
+            {"AttributeName": "pk", "KeyType": "HASH"},
+            {"AttributeName": "sk", "KeyType": "RANGE"},
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "pk", "AttributeType": "S"},
+            {"AttributeName": "sk", "AttributeType": "N"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+    )
+
+    # Insert items with sk from 1 to 10
+    for i in range(1, 11):
+        client.put_item(
+            TableName="test_reverse_pagination",
+            Item={
+                "pk": {"S": "pk1"},
+                "sk": {"N": str(i)},
+                "value": {"S": f"item{i}"},
+            },
+        )
+
+    # Page 1: Query in reverse, limit 5
+    page1 = client.query(
+        TableName="test_reverse_pagination",
+        KeyConditionExpression="pk = :pk",
+        ExpressionAttributeValues={":pk": {"S": "pk1"}},
+        ScanIndexForward=False,
+        Limit=5,
+    )
+    assert page1["Count"] == 5
+    p1_values = [item["value"]["S"] for item in page1["Items"]]
+    # Reverse order: 10, 9, 8, 7, 6
+    assert p1_values == ["item10", "item9", "item8", "item7", "item6"]
+
+    # Page 2: Continue with ExclusiveStartKey
+    page2 = client.query(
+        TableName="test_reverse_pagination",
+        KeyConditionExpression="pk = :pk",
+        ExpressionAttributeValues={":pk": {"S": "pk1"}},
+        ScanIndexForward=False,
+        Limit=5,
+        ExclusiveStartKey=page1["LastEvaluatedKey"],
+    )
+    assert page2["Count"] == 5
+    p2_values = [item["value"]["S"] for item in page2["Items"]]
+    # Should continue: 5, 4, 3, 2, 1
+    assert p2_values == ["item5", "item4", "item3", "item2", "item1"]
+
+    # Verify no more pages
+    assert "LastEvaluatedKey" not in page2
