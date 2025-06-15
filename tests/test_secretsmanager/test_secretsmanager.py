@@ -2208,3 +2208,12 @@ def test_aws_managed_secret(set_custom_id):
     assert len(resp["SecretValues"]) == 1
     assert resp["SecretValues"][0]["ARN"] == secret.arn
     assert resp["SecretValues"][0]["SecretString"] == "53cr3t"
+
+
+@mock_aws
+def test_list_secret_version_ids_nonexistent_secret():
+    """Test that list_secret_version_ids raises ResourceNotFoundException
+    when called with a non-existent secret ID."""
+    conn = boto3.client("secretsmanager", region_name="us-east-1")
+    with pytest.raises(conn.exceptions.ResourceNotFoundException):
+        conn.list_secret_version_ids(SecretId="nonexistent-secret-id-12345")

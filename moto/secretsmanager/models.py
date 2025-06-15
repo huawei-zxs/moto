@@ -923,7 +923,7 @@ class SecretsManagerBackend(BaseBackend):
         )
 
     def list_secret_version_ids(self, secret_id: str) -> str:
-        secret = self.secrets[secret_id]
+        secret = self.secrets.get(secret_id)
 
         version_list = []
         for version_id, version in secret.versions.items():
