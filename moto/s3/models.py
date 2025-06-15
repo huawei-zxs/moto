@@ -2796,7 +2796,7 @@ class S3Backend(BaseBackend, CloudWatchMetricProvider):
             result_keys = []
             is_truncated = True
             next_continuation_token = None
-        elif len(result_keys) > max_keys:
+        elif len(result_keys) >= max_keys:
             is_truncated = "true"  # type: ignore
             result_keys = result_keys[:max_keys]
             item = result_keys[-1]
