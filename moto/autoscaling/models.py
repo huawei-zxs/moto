@@ -777,7 +777,7 @@ class FakeAutoScalingGroup(CloudFormationModel):
         else:
             self.desired_capacity = new_capacity
 
-        curr_instance_count = len(self.active_instances())
+        curr_instance_count = len(self.instance_states)
 
         if self.desired_capacity == curr_instance_count:
             pass  # Nothing to do here
