@@ -131,8 +131,13 @@ class BaseIAMPolicyValidator:
         self._validate_actions_for_prefixes()
         self._validate_not_actions_for_prefixes()
 
+    @staticmethod
+    def _strip_json_comments(json_str: str) -> str:
+        return re.sub(r"/\*.*?\*/", "", json_str, flags=re.DOTALL)
+
     def _validate_syntax(self) -> None:
-        self._policy_json = json.loads(self._policy_document)
+        stripped = self._strip_json_comments(self._policy_document)
+        self._policy_json = json.loads(stripped)
         assert isinstance(self._policy_json, dict)
         self._validate_top_elements()
         self._validate_version_syntax()

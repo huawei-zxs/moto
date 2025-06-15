@@ -1622,6 +1622,15 @@ valid_policy_documents = [
             },
         ],
     },
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example_bucket/*",
+            "Condition": {"StringLike": {"s3:prefix": "home/docs/*/path"}}
+        },
+    },
 ]
 
 
