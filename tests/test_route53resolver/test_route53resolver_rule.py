@@ -537,3 +537,26 @@ def test_route53resolver_bad_list_resolver_rules():
         "Value '250' at 'maxResults' failed to satisfy constraint: Member "
         "must have length less than or equal to 100"
     ) in err["Message"]
+
+
+@mock_aws
+def test_list_resolver_rules_filter_endpoint_id_when_none():
+    """Test listing resolver rules with ResolverEndpointId filter when rule has no endpoint."""
+    client = boto3.client("route53resolver", region_name=TEST_REGION)
+    random_num = mock_random.get_random_hex(10)
+
+    # Create a rule WITHOUT a ResolverEndpointId - this sets resolver_endpoint_id=None
+    client.create_resolver_rule(
+        CreatorRequestId=f"FLT-{random_num}",
+        Name=f"FLT-{random_num}",
+        RuleType="FORWARD",
+        DomainName=f"test{random_num}.test",
+        TargetIps=[{"Ip": "10.0.1.200", "Port": 53}],
+    )
+
+    # Filtering by ResolverEndpointId when a rule has no endpoint should not crash
+    response = client.list_resolver_rules(
+        Filters=[{"Name": "ResolverEndpointId", "Values": ["rslvr-out-nonexistent"]}]
+    )
+    # The rule with no endpoint should not match this filter
+    assert len(response["ResolverRules"]) == 0

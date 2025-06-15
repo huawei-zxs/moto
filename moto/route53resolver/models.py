@@ -894,7 +894,7 @@ class Route53ResolverBackend(BaseBackend):
             elif isinstance(field_value, int):
                 if str(field_value) not in rr_filter["Values"]:
                     return False
-            elif field_value not in rr_filter["Values"]:
+            elif field_value.strip() not in rr_filter["Values"]:
                 return False
 
         return True
