@@ -105,3 +105,35 @@ def test_event_pattern_with_multi_numeric_event_filter():
 def test_event_pattern_dump(pattern, expected_str):
     event_pattern = EventPattern.load(pattern)
     assert event_pattern.dump() == expected_str
+
+
+def test_event_pattern_with_odd_length_numeric_filter():
+    """Odd-length numeric filter arrays expose a bug where zip_longest
+    with fillvalue=0 incorrectly adds a comparison against 0, creating
+    a logical contradiction that prevents any match.
+
+    For odd-length filter [">", 1, "<="]:
+    - Buggy code: checks "> 1 AND <= 0" => contradiction, never matches
+    - Correct code (zip): only checks "> 1", drops the trailing "<="
+    """
+    # FAIL_TO_PASS: These SHOULD match (values > 1) but bug prevents it
+    pattern = EventPattern.load(
+        json.dumps({"detail": {"foo": [{"numeric": [">", 1, "<="]}]}})
+    )
+    # Under correct code: only "> 1" is checked, so 2, 100, etc. match
+    # Under buggy code: "> 1 AND <= 0" is checked, so nothing can match
+    assert pattern.matches_event({"detail": {"foo": 2}})
+    assert pattern.matches_event({"detail": {"foo": 100}})
+
+    # PASS_TO_PASS: These correctly do NOT match under both behaviors
+    assert not pattern.matches_event({"detail": {"foo": 1}})
+    assert not pattern.matches_event({"detail": {"foo": 0}})
+
+    # Additional test with trailing operator that would never match with fillvalue=0
+    pattern2 = EventPattern.load(
+        json.dumps({"detail": {"val": [{"numeric": ["<", 10, ">="]}]}})
+    )
+    # Under correct code: only "< 10" is checked
+    assert pattern2.matches_event({"detail": {"val": 5}})
+    assert not pattern2.matches_event({"detail": {"val": 10}})
+    assert not pattern2.matches_event({"detail": {"val": 15}})
