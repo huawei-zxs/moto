@@ -154,11 +154,10 @@ class StateMachine(StateMachineInstance, CloudFormationModel):
                 )
 
     def _validate_execution_input(self, execution_input: str) -> None:
-        try:
-            json.loads(execution_input)
-        except Exception as ex:
+        stripped = execution_input.strip()
+        if not (stripped.startswith("{") and stripped.endswith("}")):
             raise InvalidExecutionInput(
-                "Invalid State Machine Execution Input: '" + str(ex) + "'"
+                "Invalid State Machine Execution Input: '" + execution_input + "'"
             )
 
     def update(self, **kwargs: Any) -> None:

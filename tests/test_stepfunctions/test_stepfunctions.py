@@ -594,6 +594,34 @@ def test_state_machine_start_execution_with_invalid_input():
 
 
 @mock_aws
+def test_state_machine_start_execution_with_invalid_json_input():
+    """Test that start_execution rejects JSON-like but malformed input."""
+    client = boto3.client("stepfunctions", region_name=region)
+    sm = client.create_state_machine(
+        name="name", definition=str(simple_definition), roleArn=_get_default_role()
+    )
+    # Malformed JSON with unquoted keys should be rejected
+    with pytest.raises(ClientError) as ex:
+        client.start_execution(
+            stateMachineArn=sm["stateMachineArn"], input='{key: "value"}'
+        )
+    assert ex.value.response["Error"]["Code"] == "InvalidExecutionInput"
+
+    # Malformed JSON with unquoted values should be rejected
+    with pytest.raises(ClientError) as ex:
+        client.start_execution(
+            stateMachineArn=sm["stateMachineArn"], input='{"key": value}'
+        )
+    assert ex.value.response["Error"]["Code"] == "InvalidExecutionInput"
+
+    # Nested malformed JSON should also be rejected
+    with pytest.raises(ClientError):
+        client.start_execution(
+            stateMachineArn=sm["stateMachineArn"], input='{outer: {inner: val}}'
+        )
+
+
+@mock_aws
 def test_state_machine_list_executions():
     client = boto3.client("stepfunctions", region_name=region)
     #
