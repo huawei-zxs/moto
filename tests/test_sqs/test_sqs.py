@@ -2140,6 +2140,26 @@ def test_send_message_batch_with_empty_list():
     )
 
 
+
+@mock_aws
+def test_send_message_batch_exactly_10_entries():
+    client = boto3.client("sqs", region_name=REGION)
+
+    response = client.create_queue(QueueName="test-queue-exact-10")
+    queue_url = response["QueueUrl"]
+
+    entries = [
+        {"Id": f"id_{i}", "MessageBody": f"body_{i}"} for i in range(10)
+    ]
+
+    response = client.send_message_batch(QueueUrl=queue_url, Entries=entries)
+
+    assert len(response["Successful"]) == 10
+    assert sorted([entry["Id"] for entry in response["Successful"]]) == [
+        f"id_{i}" for i in range(10)
+    ]
+
+
 @mock_aws
 def test_batch_change_message_visibility():
     if settings.TEST_SERVER_MODE:

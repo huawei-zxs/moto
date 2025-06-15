@@ -930,7 +930,7 @@ class SQSBackend(BaseBackend):
         if duplicate_id:
             raise BatchEntryIdsNotDistinct(duplicate_id)
 
-        if len(entries) > 10:
+        if len(entries) >= 10:
             raise TooManyEntriesInBatchRequest(len(entries))
 
         messages = []
