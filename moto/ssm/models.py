@@ -626,7 +626,7 @@ class Document(BaseModel):
         self.content_json = content_json
 
         try:
-            self.schema_version = str(content_json["schemaVersion"])
+            self.schema_version = content_json["schemaVersion"]
             self.description = content_json.get("description")
             self.outputs = content_json.get("outputs")
             self.files = content_json.get("files")

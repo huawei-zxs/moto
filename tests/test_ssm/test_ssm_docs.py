@@ -787,3 +787,39 @@ def test_tags_in_list_tags_from_resource_document():
             ResourceType="Document", ResourceId="TestDocument"
         )
     assert ex.value.response["Error"]["Code"] == "InvalidResourceId"
+
+
+@mock_aws
+def test_describe_document_schema_version_must_be_string():
+    """SchemaVersion should be a string even when provided as JSON number."""
+    client = boto3.client("ssm", region_name="us-east-1")
+
+    doc_content = json.dumps({
+        "schemaVersion": 2.2,
+        "description": "Test numeric schema version document",
+        "mainSteps": [
+            {
+                "action": "aws:runShellScript",
+                "name": "echo",
+                "inputs": {"runCommand": ["echo hello"]},
+            }
+        ],
+        "parameters": {},
+    })
+
+    client.create_document(
+        Content=doc_content,
+        Name="TestNumericSchemaVersion",
+        DocumentType="Command",
+        DocumentFormat="JSON",
+    )
+
+    resp = client.describe_document(Name="TestNumericSchemaVersion")
+    doc = resp["Document"]
+
+    # SchemaVersion must be returned as a string, not a number
+    schema_version = doc["SchemaVersion"]
+    assert isinstance(schema_version, str), (
+        f"SchemaVersion should be str, got {type(schema_version).__name__}: {schema_version!r}"
+    )
+    assert schema_version == "2.2"
