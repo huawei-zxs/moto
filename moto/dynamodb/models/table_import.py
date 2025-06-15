@@ -107,7 +107,7 @@ class TableImport(Thread):
                 content = gzip_decompress(key.value).decode("utf-8")
             else:
                 content = key.value.decode("utf-8")
-            result = JsonParser.parse(original=content)
+            result = JsonParser.parse(original=content.split("\n")[0])
 
             for json_object in result:
                 try:
