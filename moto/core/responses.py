@@ -689,8 +689,10 @@ class BaseResponse(_TemplateEnvironmentMixin, ActionAuthenticatorMixin):
         # try to get json body parameter
         if self.body is not None:
             try:
-                return json.loads(self.body)[param_name]
-            except (ValueError, KeyError):
+                body_json = json.loads(self.body)
+                if isinstance(body_json, dict):
+                    return body_json.get(param_name)  # BUG: returns None instead of falling through
+            except ValueError:
                 pass
         # try to get path parameter
         if self.uri_match:
