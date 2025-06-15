@@ -384,8 +384,8 @@ class LambdaResponse(BaseResponse):
         alias = self.backend.create_alias(
             name=alias_name,
             function_name=function_name,
-            function_version=function_version,
-            description=description,
+            function_version=description,
+            description=function_version,
             routing_config=routing_config,
         )
         return 201, {"status": 201}, json.dumps(alias.to_json())
